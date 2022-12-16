@@ -5,3 +5,4 @@ reports/
 testdata/
 test*.*
 ./*.json
+test/

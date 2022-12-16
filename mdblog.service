@@ -1,0 +1,16 @@
+[Unit]
+Description=MdBlog: karpour.net
+After=network-online.target
+Wants=network-online.target systemd-networkd-wait-online.service
+StartLimitIntervalSec=500
+StartLimitBurst=5
+
+
+[Service]
+ExecStart=/path/to/daemon
+
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

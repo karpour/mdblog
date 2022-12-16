@@ -1,25 +1,21 @@
-import { existsSync, readdirSync, statSync } from "fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import path from "path";
 import RSS from "rss";
 import { Article } from "./Article";
 import express, { Application } from 'express';
-
+import ejs, { TemplateFunction } from "ejs";
 
 import GopherMarkdownRenderer, { text } from "./markdown/GopherMarkdownRenderer";
 import ArticleMarkdownRenderer from "./markdown/ArticleMarkdownRenderer";
 import Html5MarkdownRenderer from "./markdown/Html5MarkdownRenderer";
+import { MdBlogConfig } from "./MdBlogConfig";
+import log, { verbose } from "./log";
+import { CONFIG_FILE_NAME, DIR_STATIC_NAME, DIR_TEMPLATES_NAME } from "./defaults";
 const { GopherServer, DynamicRouter, URLRouter } = require("gopher-server");
 
-
-
-export type MdBlogConfig = {
-    siteTitle: string,
-    hostname: string,
-    rootDir: string,
-    httpPort?: number,
-    gopherPort?: number;
-    author: string,
-    path?: string;
+const defaultConfig: Partial<MdBlogConfig> = {
+    httpPort: 80,
+    gopherPort: 70
 };
 
 /**
@@ -53,12 +49,12 @@ export type MdBlogRenderers = {
 };
 
 class MdBlog {
+    protected config: MdBlogConfig;
     protected readonly siteTitle: string;
     protected readonly hostname: string;
     protected readonly path: string;
     protected readonly rootDir: string;
-    protected readonly httpPort: number;
-    protected readonly gopherPort: number;
+    protected readonly homeTemplate: TemplateFunction;
 
     protected renderers: MdBlogRenderers;
 
@@ -69,15 +65,18 @@ class MdBlog {
     protected articlesById: { [key: string]: Article; } = {};
     protected articles: Article[] = [];
 
-    public constructor(protected config: MdBlogConfig) {
+    private getFileContents(filePath: string) {
+        return readFileSync(path.join(this.rootDir, filePath)).toString();
+    }
+
+    public constructor(config: MdBlogConfig) {
+        this.config = Object.assign({}, defaultConfig, config);
         console.log(`Started MdBlog "${config.siteTitle}"`);
         console.log(`hostname: "${config.hostname}"`);
-        this.siteTitle = config.siteTitle;
-        this.hostname = config.hostname;
-        this.rootDir = config.rootDir;
-        this.httpPort = config.httpPort ?? DEFAULT_HTTP_PORT;
-        this.gopherPort = config.gopherPort ?? DEFAULT_GOPHER_PORT;
-        this.path = config.path ?? "/";
+        this.siteTitle = this.config.siteTitle;
+        this.hostname = this.config.hostname;
+        this.rootDir = this.config.rootDir;
+        this.path = this.config.path ?? "/";
         this.app = express();
 
         this.renderers = {
@@ -85,7 +84,16 @@ class MdBlog {
             rssRenderer: new Html5MarkdownRenderer(this.hostname),
             gopherRenderer: new GopherMarkdownRenderer(this.hostname)
         };
+        this.homeTemplate = ejs.compile(this.getFileContents(".templates/home.ejs"), { context: self });
+        this.reScan();
+    }
 
+    public serve() {
+        this.serveHttp();
+        this.serveGopher();
+    }
+
+    public serveHttp() {
         const self = this;
 
         this.app.get('/ua', function (req, res) {
@@ -96,11 +104,16 @@ class MdBlog {
             res.end(self.getRSS());
         });
 
-        this.app.get('/:articleId', function (req, res) {
-            res.end(self.getRSS());
+        this.app.get('/', function (req, res) {
+            res.end(self.homeTemplate());
         });
 
+        this.app.listen(this.config.httpPort);
+        console.log(`HTTP listening on ${this.config.httpPort}`);
+    }
 
+    public serveGopher() {
+        const self = this;
 
         this.gopher = new GopherServer();
 
@@ -112,7 +125,7 @@ class MdBlog {
 
         this.gopher.use(
             new DynamicRouter("/:id", (request: any, params: any) => {
-                const articleId = params.id.replaceAll("_", "-")
+                const articleId = params.id.replaceAll("_", "-");
                 console.log(`Request for ${articleId}`);
                 const article = self.getArticle(articleId);
                 if (article) {
@@ -125,17 +138,14 @@ class MdBlog {
 
         // Log all requests to the server
         this.gopher.on("request", (request: any) => {
-            console.log(`${request.socket.remoteAddress} requested ${request.path}`);
+            log.info(`Gopher: ${request.socket.remoteAddress} requested ${request.path}`);
         });
-
-
-
-        this.reScan();
-
-
-
-        this.app.listen(this.config.httpPort);
         this.gopher.listen(this.config.gopherPort);
+        log.info(`Gopher listening on ${this.config.gopherPort}`);
+    }
+
+    public initActivityPub() {
+
     }
 
     public getRSS(category?: string): string {
@@ -191,7 +201,18 @@ class MdBlog {
     public reScan() {
         this.articles = this.scanDir(this.rootDir).sort((a: Article, b: Article) => b.date.getTime() - a.date.getTime());
         this.articles.forEach(a => { this.articlesById[a.getId()] = a; });
-        console.log(this.articlesById);
+        //console.log(this.articlesById);
+    }
+
+    public static createBlog(config: MdBlogConfig) {
+        verbose(`Creating blog "${config.siteTitle}"`);
+        console.log(config);
+        if (!existsSync(config.rootDir)) {
+            mkdirSync(config.rootDir, { recursive: true });
+            mkdirSync(path.join(config.rootDir, DIR_STATIC_NAME), { recursive: true });
+            mkdirSync(path.join(config.rootDir, DIR_TEMPLATES_NAME), { recursive: true });
+        }
+        writeFileSync(path.join(config.rootDir, CONFIG_FILE_NAME), JSON.stringify(config, null, 2));
     }
 }
 

@@ -1,16 +1,9 @@
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
+import { readdir, stat } from "fs/promises";
 import path from "path";
+import { ArticleProps } from "./ArticleProps";
 import { isArticleDir, createSlug } from "./MdBlog";
 
-
-export interface ArticleProps {
-    title: string;
-    tags: string[];
-    categories: string[];
-    slug?: string;
-    date: Date;
-    author?: string;
-}
 
 export class Article implements ArticleProps {
     public title: string;
@@ -23,7 +16,7 @@ export class Article implements ArticleProps {
 
     markdown: string;
 
-    public constructor(directory: string) {
+    public constructor(protected directory: string) {
         if (!isArticleDir(directory))
             throw new Error(`Directory "${directory}" does not exist`);
         this.markdown = readFileSync(path.join(directory, "article.md")).toString("utf8");
@@ -58,8 +51,8 @@ export class Article implements ArticleProps {
         });
 
         this.title = input.title ?? "undefined";
-        this.tags = (input.tags ?? "").split(/\s*,\s*/);
-        this.categories = input.categories ?? [];
+        this.tags = input.tags ? input.tags.split(/\s*,\s*/) : [];
+        this.categories = input.categories ? input.categories.split(/\s*,\s*/) : [];
         this.slug = input.slug ?? createSlug(this.title);
         this.date = new Date(input.date);
         this.author = input.author;
@@ -67,5 +60,27 @@ export class Article implements ArticleProps {
 
     public getId() {
         return this.slug;
+    }
+
+
+    public static async getArticles(dir: string, outArray: Article[] = [], recursive: boolean = true): Promise<Article[]> {
+        if (this.isArticleDir(dir)) {
+            outArray.push(new Article(dir));
+        } else {
+            let files = await readdir(dir);
+            for (var f of files) {
+                // Ignore dirs like .git, .templates
+                if (f.startsWith('.')) continue;
+                var curDir = path.join(dir, f);
+                if ((await stat(curDir)).isDirectory()) {
+                    await this.getArticles(curDir, outArray);
+                }
+            }
+        }
+        return outArray;
+    }
+
+    public static isArticleDir(directory: string) {
+        return existsSync(path.join(directory, 'report.md'));
     }
 }

@@ -3,6 +3,8 @@ import MarkdownIt from "markdown-it";
 import path from "path";
 import ArticleMarkdownRenderer from "./ArticleMarkdownRenderer";
 import Renderer, { RenderRule } from "markdown-it/lib/renderer";
+import createYoutubeVideoUrl from "./createYoutubeVideoUrl";
+import createVimeoVideoUrl from "./createVimeoVideoUrl";
 
 function gopherImage(caption: string, path: string, server: string, port: number): string {
     return `I${caption}\t${path}\t${server}\t${port}`;
@@ -105,15 +107,15 @@ class GopherMarkdownRenderer extends ArticleMarkdownRenderer {
     }
 
     public renderVideo(url: string, title?: string | undefined, alt?: string | undefined): string {
-        throw new Error("Method not implemented.");
+        return gopherHttpLink(title ?? alt ?? url, url, this.hostname);
     }
 
     public renderYouTube(videoId: string, title?: string | undefined, alt?: string | undefined): string {
-        throw new Error("Method not implemented.");
+        return gopherHttpLink(title ?? alt ?? `YouTube videoid ${videoId}`, createYoutubeVideoUrl(videoId), this.hostname);
     }
 
     public renderVimeo(videoId: string, title?: string | undefined, alt?: string | undefined): string {
-        throw new Error("Method not implemented.");
+        return gopherHttpLink(title ?? alt ?? `Vimeo videoid ${videoId}`, createVimeoVideoUrl(videoId), this.hostname);
     }
 
     public renderImage(src: string, title?: string | undefined, alt?: string | undefined): string {

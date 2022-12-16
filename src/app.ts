@@ -1,6 +1,7 @@
 import { accessSync, lstatSync, readFileSync } from "fs";
 import fs from "fs";
-import MdBlog, { MdBlogConfig, validateMdBlogConfig } from "./MdBlog";
+import MdBlog, { validateMdBlogConfig } from "./MdBlog";
+import { MdBlogConfig } from "./MdBlogConfig";
 import path from "path";
 
 async function main() {
@@ -17,7 +18,7 @@ async function main() {
         //console.log(mdBlog.getArticles());
         //mdBlog.reScan();
 
-        console.log(mdBlog.getArticle("sony-pcg-c1xs"));
+        //console.log(mdBlog.getArticle("sony-pcg-c1xs"));
 
     } catch (e: any) {
         console.error("Error: " + e.message);
