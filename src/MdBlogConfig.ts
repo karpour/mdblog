@@ -5,6 +5,9 @@ export type MdBlogConfig = {
     siteTitle: string;
     hostname: string;
     rootDir: string;
+    basePath?: string;
+    description?: string;
+    keywords?: string[];
     httpPort?: number;
     gopherPort?: number;
     author: string;

@@ -14,7 +14,7 @@ async function main() {
 
         const siteConfig = validateMdBlogConfig(JSON.parse(readFileSync(path.join(MDBLOG_DIR, "env.json")).toString()));
 
-        const mdBlog = new MdBlog(siteConfig);
+        //const mdBlog = new MdBlog(siteConfig);
         //console.log(mdBlog.getArticles());
         //mdBlog.reScan();
 

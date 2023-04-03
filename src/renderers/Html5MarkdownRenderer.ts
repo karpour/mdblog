@@ -1,10 +1,10 @@
 import ArticleMarkdownRenderer from "./ArticleMarkdownRenderer";
 import emoji from 'markdown-it-emoji';
 import { encode } from "html-entities";
+import highlightjs from "markdown-it-highlightjs";
 
 
 class Html5MarkdownRenderer extends ArticleMarkdownRenderer {
-
 
     public renderVideo(src: string, title?: string | undefined, alt?: string | undefined): string {
         if (src.endsWith('.webm')) {
@@ -36,6 +36,7 @@ class Html5MarkdownRenderer extends ArticleMarkdownRenderer {
     public constructor(hostname: string) {
         super(hostname);
         this.use(emoji);
+        this.use(highlightjs);
     }
 }
 

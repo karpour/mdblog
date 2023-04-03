@@ -1,5 +1,8 @@
 import { CommandLineAction, CommandLineRemainder } from "@rushstack/ts-command-line";
+import DefaultArticleProdider from "../DefaultArticleProvider";
 import { APP_NAME, DEFAULT_CONF_PATH } from "../defaults";
+import MdBlog from "../MdBlog";
+import { getConfig } from "./cliConfig";
 
 
 
@@ -14,7 +17,10 @@ export class ServeAction extends CommandLineAction {
     }
 
     protected async onExecute(): Promise<void> {
-        console.log(`Serving`)
+        const config = getConfig();
+        const articleProvider = await DefaultArticleProdider.create(config.rootDir, config.basePath);
+        const mdBlog = new MdBlog(config, articleProvider);
+        mdBlog.serve();
     }
 
     protected onDefineParameters(): void {
