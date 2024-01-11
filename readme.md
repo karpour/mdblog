@@ -18,3 +18,18 @@ mdblog new
 - `tags` - the page tags
 - `categories` - the page categories
 - `draft` - whether the page is a draft (true/false)
+
+## TODO
+
+- [ ] Comment types
+- [ ] Comment rendering
+- [ ] Wordpress importer
+- [ ] Archive page
+- [ ] Category page
+- [ ] HTML 4 renderer
+- [ ] Finish gopher renderer
+- [ ] Article PDF download
+- [ ] ActivityPub support
+- [ ] RSS support
+- [ ] WebMention support
+- [ ] `<html lang='en'>`

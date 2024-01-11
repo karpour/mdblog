@@ -7,7 +7,7 @@ import { Article } from "../Article";
 
 const vimeoRE = /^(?:https?:\/\/)?(?:www\.)?vimeo.com\/(?<id>\d+)($|\/)/;
 const youtubeRE = /^(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/)(?:watch\?v=|v\/|embed\/)?([^&\s?]+)\S*$/;
-const VIDEO_EXTENSIONS = ["webm", "mp4"];
+const VIDEO_EXTENSIONS = [".webm", ".mp4", ".wmv"];
 
 abstract class ArticleMarkdownRenderer extends MarkdownIt {
     public constructor(protected hostname: string) {

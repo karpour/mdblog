@@ -6,3 +6,4 @@ testdata/
 test*.*
 ./*.json
 test/
+.vscode/

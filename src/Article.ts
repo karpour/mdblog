@@ -1,25 +1,33 @@
 import { existsSync, readFileSync } from "fs";
-import { readdir, stat } from "fs/promises";
 import path from "path";
 import { ArticleProps } from "./ArticleProps";
-import { isArticleDir } from "./isArticleDir";
-import { createSlug } from "./MdBlog";
+import ArticleMarkdownRenderer from "./renderers/ArticleMarkdownRenderer";
+
+export type ArticleRenderData = {
+    html: string;
+    title: string,
+    date?: Date,
+    slug: string,
+    author?: string,
+    description: string,
+    url: string;
+};
 
 
 export class Article implements ArticleProps {
-    public title: string;
-    public tags: string[];
-    public categories: string[];
-    public slug: string;
-    public date: Date;
-    public author?: string;
-    public relativeUrl: string;
-
-
-    markdown: string;
+    public readonly title: string;
+    public readonly tags: string[];
+    public readonly categories: string[];
+    public readonly slug: string;
+    public readonly description: string;
+    public readonly date: Date;
+    public readonly author?: string;
+    public readonly relativeUrl: string;
+    public readonly lastChanged: Date;
+    public readonly markdown: string;
 
     public constructor(protected directory: string, basePath: string) {
-        if (!isArticleDir(directory))
+        if (!Article.isArticleDir(directory))
             throw new Error(`Directory "${directory}" does not exist`);
         this.markdown = readFileSync(path.join(directory, "article.md")).toString("utf8");
 
@@ -77,8 +85,11 @@ export class Article implements ArticleProps {
         this.categories = frontmatter.categories ? frontmatter.categories.split(/\s*,\s*/) : [];
         this.slug = path.basename(this.directory);
         this.title = frontmatter.title ?? this.slug;
-        this.date = new Date(frontmatter.date);
+        this.date = frontmatter.date ? new Date(frontmatter.date) : new Date(0);
+        // TODO read from file
+        this.lastChanged = this.date;
         this.author = frontmatter.author;
+        this.description = frontmatter.description ?? "";
         this.relativeUrl = path.join(basePath, this.slug + '/');
     }
 
@@ -86,6 +97,19 @@ export class Article implements ArticleProps {
         return this.slug;
     }
 
+    public getArticleData(renderer: ArticleMarkdownRenderer) {
+        return {
+            html: renderer.render(this.markdown),
+            title: this.title,
+            author: this.author,
+            date: this.date,
+            slug: this.slug,
+            description: this.description,
+            tags: this.tags,
+            categories: this.categories,
+            url: this.relativeUrl
+        };
+    }
 
     /*public static async getArticles(dir: string, outArray: Article[] = [], recursive: boolean = true): Promise<Article[]> {
         if (this.isArticleDir(dir)) {
@@ -108,7 +132,14 @@ export class Article implements ArticleProps {
 
     }
 
+
+    /**
+     * Checks if a directory is n article directory
+     * @param directory Directory to check
+     * @returns true if directory is an article dir
+     */
     public static isArticleDir(directory: string) {
-        return existsSync(path.join(directory, 'report.md'));
+        return existsSync(path.join(directory, 'article.md'));
     }
 }
+

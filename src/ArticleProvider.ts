@@ -9,8 +9,6 @@ abstract class ArticleProvider {
         return this.rootDir;
     }
 
-
-
     public abstract getArticleById(id: string): Article | undefined;
     public abstract getArticles(): Article[];
     public getArticlesPage(amount?: number, page: number = 1, filter?: (a: Article) => boolean): Article[] {

@@ -2,7 +2,7 @@ import ArticleMarkdownRenderer from "./ArticleMarkdownRenderer";
 import emoji from 'markdown-it-emoji';
 import { encode } from "html-entities";
 import highlightjs from "markdown-it-highlightjs";
-
+import multimdTable from 'markdown-it-multimd-table';
 
 class Html5MarkdownRenderer extends ArticleMarkdownRenderer {
 
@@ -37,6 +37,7 @@ class Html5MarkdownRenderer extends ArticleMarkdownRenderer {
         super(hostname);
         this.use(emoji);
         this.use(highlightjs);
+        this.use(multimdTable);
     }
 }
 

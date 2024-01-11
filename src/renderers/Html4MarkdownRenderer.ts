@@ -1,9 +1,17 @@
 import { encode } from "html-entities";
 import ArticleMarkdownRenderer from "./ArticleMarkdownRenderer";
+import multimdTable from 'markdown-it-multimd-table';
 
 class Html4MarkdownRenderer extends ArticleMarkdownRenderer {
     public renderVideo(url: string, title?: string | undefined, alt?: string | undefined): string {
-        throw new Error("Method not implemented.");
+        return `<object id="MediaPlayer" width=320 height=286 classid="CLSID:22D6f312-B0F6-11D0-94AB-0080C74C7E95" standby="Loading Windows Media Player ..." type="application/x-oleobject" codebase="http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=6,4,7,1112"> 
+        <param name="filename" value="${url}">
+        <param name="Showcontrols" value="True">
+        <param name="autoStart" value="True">
+        <param name="wmode" value="transparent">
+        <embed type="application/x-mplayer2" src=${url}" name="MediaPlayer" autoStart="True" wmode="transparent" width="320" height="286" ></embed>
+        </object>
+        <div>${title}</div>`;
     }
     public renderYouTube(videoIs: string, title?: string | undefined, alt?: string | undefined): string {
         throw new Error("Method not implemented.");
@@ -14,10 +22,18 @@ class Html4MarkdownRenderer extends ArticleMarkdownRenderer {
     public renderImage(src: string, title?: string | undefined, alt?: string | undefined): string {
         return `<div><img src="${src}" ${alt && `alt="${encode(alt)}"`} /><br>${title && `<b>${title}</b>`}</div>`;
     }
+
+    public constructor(hostname: string) {
+        super(hostname);
+        this.use(multimdTable);
+    }
 }
 
+export default Html4MarkdownRenderer;
+
+
 /*
-<object id="MediaPlayer" width=320 height=286 classid="CLSID:22D6f312-B0F6-11D0-94AB-0080C74C7E95" standby="Loading Windows Media Player ..." type="application/x-oleobject" codebase="http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=6,4,7,1112"> 
+<object id="MediaPlayer" width=320 height=286 classid="CLSID:22D6f312-B0F6-11D0-94AB-0080C74C7E95" standby="Loading Windows Media Player ..." type="application/x-oleobject" codebase="http://activex.microsoft.com/activex/controls/mplayer/en/nsmp2inf.cab#Version=6,4,7,1112">
 <param name="filename" value="http://mydomain.com/sample.wmv">
 <param name="Showcontrols" value="True">
 <param name="autoStart" value="True">

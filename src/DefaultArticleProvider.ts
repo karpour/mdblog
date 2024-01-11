@@ -2,7 +2,6 @@ import { readdirSync, statSync } from "fs";
 import path from "path";
 import { Article } from "./Article";
 import ArticleProvider from "./ArticleProvider";
-import { isArticleDir } from "./isArticleDir";
 import { verbose } from "./log";
 
 
@@ -11,7 +10,7 @@ class DefaultArticleProdider extends ArticleProvider {
     protected articles: Article[] = [];
 
     private scanDir(dir: string): Article[] {
-        if (isArticleDir(dir)) {
+        if (Article.isArticleDir(dir)) {
             return [new Article(dir, this.basePath)];
         }
         return readdirSync(dir)

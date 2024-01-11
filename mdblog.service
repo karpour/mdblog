@@ -5,12 +5,12 @@ Wants=network-online.target systemd-networkd-wait-online.service
 StartLimitIntervalSec=500
 StartLimitBurst=5
 
-
 [Service]
-ExecStart=/path/to/daemon
+ExecStart=/var/www/mdblog/mdblog
+#ExecStopPost=
 
 Restart=always
-RestartSec=5s
+RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target

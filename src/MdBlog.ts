@@ -1,23 +1,28 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import RSS from "rss";
 import { Article } from "./Article";
 import express, { Application } from 'express';
 import ejs, { TemplateFunction } from "ejs";
+import { Builder } from "xml2js";
 
-import GopherMarkdownRenderer, { text } from "./renderers/GopherMarkdownRenderer";
+
+import GopherMarkdownRenderer from "./renderers/GopherMarkdownRenderer";
 import ArticleMarkdownRenderer from "./renderers/ArticleMarkdownRenderer";
 import Html5MarkdownRenderer from "./renderers/Html5MarkdownRenderer";
 import { MdBlogConfig } from "./MdBlogConfig";
 import log, { verbose } from "./log";
 import { CONFIG_FILE_NAME, DIR_STATIC_NAME, DIR_TEMPLATES_NAME } from "./defaults";
 import ArticleProvider from "./ArticleProvider";
-const { GopherServer, DynamicRouter, URLRouter } = require("gopher-server");
+import { hostname } from "os";
+import Html4MarkdownRenderer from "./renderers/Html4MarkdownRenderer";
+const { GopherServer, DynamicRouter } = require("gopher-server");
 
 const defaultConfig: Partial<MdBlogConfig> = {
     httpPort: 80,
     gopherPort: 70
 };
+
 
 
 
@@ -38,12 +43,17 @@ export type MdBlogRenderers = {
     [key: string]: ArticleMarkdownRenderer;
 };
 
+const xmlBuilder = new Builder({ headless: true });
+
+
+
 class MdBlog {
     protected config: MdBlogConfig;
     protected readonly siteTitle: string;
     protected readonly hostname: string;
     protected readonly path: string;
     protected readonly rootDir: string;
+    protected readonly author: string;
     protected readonly description: string;
     protected readonly keywords: string;
     protected readonly templateHome: TemplateFunction;
@@ -53,11 +63,8 @@ class MdBlog {
 
     protected renderers: MdBlogRenderers;
 
-
     protected app: Application;
     protected gopher: typeof GopherServer;
-
-
 
     private getFileContents(filePath: string) {
         return readFileSync(path.join(this.rootDir, filePath)).toString();
@@ -71,16 +78,16 @@ class MdBlog {
         this.hostname = this.config.hostname;
         this.rootDir = this.config.rootDir;
         this.description = this.config.description ?? "";
+        this.author = this.config.author ?? "Unknown";
         this.keywords = (this.config.keywords ?? []).join(', ');
         this.path = this.config.path ?? "/";
         this.app = express();
         this.articleProvider = articleProvider;
-        const self = this;
 
 
         this.renderers = {
             html5: new Html5MarkdownRenderer(this.hostname),
-            html4: new Html5MarkdownRenderer(this.hostname),
+            html4: new Html4MarkdownRenderer(this.hostname),
             rss: new Html5MarkdownRenderer(this.hostname),
             gopher: new GopherMarkdownRenderer(this.hostname)
         };
@@ -107,65 +114,70 @@ class MdBlog {
         verbose(`Serving static files from "${path.join(this.articleProvider.articleDirectory, ".static")}"`);
         this.app.use(express.static(path.join(this.articleProvider.articleDirectory, ".static")));
 
+        // Middleware function to determine render engine
+        this.app.get('*', (req, res, next) => {
+            let reqRenderer = `${req.query.renderer}` ?? 'html5';
+            res.locals.renderer = self.renderers[reqRenderer] ?? self.renderers['html5'];
+            next();
+        });
 
-        this.app.get('/ua', function (req, res) {
+
+        this.app.get('/ua', (req, res) => {
             res.end(req.headers["user-agent"]);
         });
 
         // RSS
-        this.app.get('/feed', function (req, res) {
+        this.app.get('/feed', (req, res) => {
+            res.contentType('application/xml');
             res.end(self.getRSS());
         });
 
         // Home
-        this.app.get('/', function (req, res) {
-            const articleData = self.getArticles().map(article => ({
-                html: self.renderers.html5.render(article.markdown),
-                title: article.title,
-                date: "2020-01-01",
-                dateReadable: "January 1st",
-                slug: article.slug,
-                url: article.relativeUrl
-            }));
+        this.app.get('/', (req, res) => {
+            const articleData = self.getArticles()
+                .map(article => article.getArticleData(res.locals.renderer));
             //console.log(articleData);
 
             res.end(self.templateHome({
                 title: self.siteTitle,
                 keywords: self.keywords,
                 description: self.description,
-                articles: articleData
+                articles: articleData,
+                author: self.author,
+                hostname: self.hostname,
+                url: "https://" + hostname
             }));
         });
 
-        this.app.get('/archive/:year', function (req, res, next) {
+        this.app.get('/archive/:year', (req, res) => {
             res.end("archive");
         });
 
-        this.app.get('/:page/', function (req, res, next) {
+        // https://www.sitemaps.org/protocol.html
+        this.app.get('/sitemap.xml', (req, res) => {
+            res.contentType('application/xml');
+            res.end(this.createSitemapXml());
+        });
+
+        this.app.get('/:page/', (req, res, next) => {
             const article = self.getArticle(req.params.page);
             if (!article) {
                 return next();
             }
-            const articleData = {
-                html: self.renderers.html5.render(article.markdown),
-                title: article.title,
-                date: "2020-01-01",
-                dateReadable: "January 1st",
-                slug: article.slug,
-                url: article.relativeUrl
-            };
-
-
+            const articleData = article.getArticleData(res.locals.renderer);
             res.end(self.templateSingle({
-                title: self.siteTitle,
-                keywords: self.keywords,
-                description: self.description,
-                article: articleData
+                title: `${article.title} - ${self.siteTitle}`,
+                keywords: article.tags,
+                description: article.description,
+                article: articleData,
+                hostname: self.hostname,
+                author: article.author ?? self.author,
+                url: self.getHttpUrl(article)
             }));
         });
 
-        this.app.get('*', function (req, res) {
-            res.status(404).send('what???');
+        this.app.get('*', (req, res) => {
+            res.status(404).send('404');
         });
 
         //console.log(`Serving static files from "${this.articleProvider.articleDirectory}"`);
@@ -180,7 +192,7 @@ class MdBlog {
         this.gopher = new GopherServer();
 
         this.gopher.use(
-            new DynamicRouter("/", (request: any, params: any) => {
+            new DynamicRouter("/", (request: any) => {
                 request.send(`iWelcome`);
             })
         );
@@ -210,7 +222,10 @@ class MdBlog {
 
     }
 
-    public getRSS(category?: string): string {
+    /**
+     * @returns The entire RSS feed as XML
+     */
+    public getRSS(): string {
         const rss = new RSS({
             title: this.siteTitle,
             feed_url: `http://${this.hostname}/feed/`,
@@ -258,6 +273,42 @@ class MdBlog {
         }
         writeFileSync(path.join(config.rootDir, CONFIG_FILE_NAME), JSON.stringify(config, null, 2));
     }
+
+
+    /** Create XML sitemap */
+    public createSitemapXml(): string {
+        // TODO make internal function for baseurl
+        const baseUrl = `https://${this.hostname}/`;
+        function articleToUrl(article: Article): SitemapUrl {
+            return {
+                loc: `${baseUrl}${article.relativeUrl}`,
+                lastmod: article.lastChanged.toISOString(),
+                changefreq: 'monthly',
+            };
+        };
+
+        // TODO add front page etc
+        const urls = [...this.articleProvider.getArticles().map(articleToUrl)];
+
+        let obj = {
+            urlset: {
+                $: {
+                    "xmlns": "http://www.sitemaps.org/schemas/sitemap/0.9"
+                },
+                url: urls
+            }
+        };
+        return `<?xml version="1.0" encoding="utf-8"?>\n` +
+            `<?xml-stylesheet href="/sitemap-style.xsl" type="text/xsl"?>\n` +
+            xmlBuilder.buildObject(obj);
+    }
 }
+
+export type SitemapUrl = {
+    loc: string,
+    lastmod: string,
+    changefreq: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
+    priority?: number;
+};
 
 export default MdBlog;

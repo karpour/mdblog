@@ -8,5 +8,4 @@ export interface ArticleProps {
     date: Date;
     author?: string;
     draft?: boolean;
-    
 }
