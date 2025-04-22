@@ -94,10 +94,10 @@ class CreateBlogAction extends CommandLineAction {
             siteTitle: this._name.value ?? promptWithDefault("Blog name", CONFIG_DEFAULT.siteTitle),
             rootDir: resolve(this._rootdir.value ?? promptWithDefault("Root directory", CONFIG_DEFAULT.rootDir)),
             hostname: this._hostName.value ?? promptWithDefault("Host name", CONFIG_DEFAULT.hostname),
-            httpPort: this._httpPort.value ?? promptIntWithDefault("HTTP Port", CONFIG_DEFAULT.httpPort),
-            gopherPort: this._gopherPort.value ?? promptIntWithDefault("Gopher Port", CONFIG_DEFAULT.gopherPort),
+            httpPort: this._httpPort.value ?? promptIntWithDefault("HTTP Port", CONFIG_DEFAULT.httpPort!),
+            gopherPort: this._gopherPort.value ?? promptIntWithDefault("Gopher Port", CONFIG_DEFAULT.gopherPort!),
             author: this._author.value ?? promptWithDefault("Author", CONFIG_DEFAULT.author),
-            syslogIdentifier: this._syslogIdentifier.value ?? promptWithDefault("Syslog identifer", CONFIG_DEFAULT.syslogIdentifier),
+            syslogIdentifier: this._syslogIdentifier.value ?? promptWithDefault("Syslog identifer", CONFIG_DEFAULT.syslogIdentifier!),
         });
     }
 }

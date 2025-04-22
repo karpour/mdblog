@@ -1,7 +1,7 @@
 import { CommandLineAction, CommandLineRemainder, CommandLineStringParameter, CommandLineStringListParameter } from "@rushstack/ts-command-line";
 import { MdBlogConfig } from "../MdBlogConfig";
 import { getConfig } from "./cliConfig";
-import DefaultArticleProdider from "../DefaultArticleProvider";
+import DefaultArticleProvider from "../DefaultArticleProvider";
 
 export class ListAction extends CommandLineAction {
 
@@ -17,7 +17,7 @@ export class ListAction extends CommandLineAction {
     protected async onExecute(): Promise<void> {
         try {
             const config = getConfig();
-            const articleProvider = await DefaultArticleProdider.create(config.rootDir, config.basePath);
+            const articleProvider = await DefaultArticleProvider.create(config.rootDir, config.basePath);
             articleProvider.getArticles().forEach(article => {
                 console.log(article.slug);
             });

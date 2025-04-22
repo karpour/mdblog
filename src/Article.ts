@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "fs";
 import path from "path";
 import { ArticleProps } from "./ArticleProps";
 import ArticleMarkdownRenderer from "./renderers/ArticleMarkdownRenderer";
+import assert from "assert";
 
 export type ArticleRenderData = {
     html: string;
@@ -26,10 +27,22 @@ export class Article implements ArticleProps {
     public readonly lastChanged: Date;
     public readonly markdown: string;
 
+    /**
+     * Construct a new Article
+     * @param directory Directory of the article files
+     * @param basePath basepath of the articles
+     */
     public constructor(protected directory: string, basePath: string) {
-        if (!Article.isArticleDir(directory))
+        // Check if article directory exists
+        if (!Article.isArticleDir(directory)) {
             throw new Error(`Directory "${directory}" does not exist`);
-        this.markdown = readFileSync(path.join(directory, "article.md")).toString("utf8");
+        }
+
+        // Find markdown file
+        const articleMdFilePath = path.join(directory, "article.md");
+        // Read raw markdown from file
+
+        this.markdown = readFileSync(articleMdFilePath).toString("utf8");
 
         let regExpResult = /---\n(?<frontmatter>(?:.*\n)+?)---\n+/.exec(this.markdown);
         const frontmatterRaw = regExpResult?.groups?.['frontmatter'] ?? '';

@@ -3,6 +3,7 @@ import emoji from 'markdown-it-emoji';
 import { encode } from "html-entities";
 import highlightjs from "markdown-it-highlightjs";
 import multimdTable from 'markdown-it-multimd-table';
+const checkbox = require("markdown-it-checkbox")
 
 class Html5MarkdownRenderer extends ArticleMarkdownRenderer {
 
@@ -38,6 +39,7 @@ class Html5MarkdownRenderer extends ArticleMarkdownRenderer {
         this.use(emoji);
         this.use(highlightjs);
         this.use(multimdTable);
+        this.use(checkbox)
     }
 }
 

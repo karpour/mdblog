@@ -4,6 +4,7 @@ import Renderer from "markdown-it/lib/renderer";
 import Token from "markdown-it/lib/token";
 import path from "path";
 import { Article } from "../Article";
+import { markdownItCheckbox } from "./markdownItCheckbox";
 
 const vimeoRE = /^(?:https?:\/\/)?(?:www\.)?vimeo.com\/(?<id>\d+)($|\/)/;
 const youtubeRE = /^(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/)(?:watch\?v=|v\/|embed\/)?([^&\s?]+)\S*$/;

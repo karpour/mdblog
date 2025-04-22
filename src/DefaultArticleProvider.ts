@@ -2,16 +2,21 @@ import { readdirSync, statSync } from "fs";
 import path from "path";
 import { Article } from "./Article";
 import ArticleProvider from "./ArticleProvider";
-import { verbose } from "./log";
+import log, { verbose } from "./log";
 
 
-class DefaultArticleProdider extends ArticleProvider {
+class DefaultArticleProvider extends ArticleProvider {
     protected articlesById: { [key: string]: Article; } = {};
     protected articles: Article[] = [];
 
     private scanDir(dir: string): Article[] {
         if (Article.isArticleDir(dir)) {
-            return [new Article(dir, this.basePath)];
+            try {
+                return [new Article(dir, this.basePath)];
+            } catch (err: any) {
+                log.warning(`Error processing Article "${dir}": ${err.message}`);
+                return [];
+            }
         }
         return readdirSync(dir)
             .map(d => path.join(dir, d))
@@ -21,11 +26,11 @@ class DefaultArticleProdider extends ArticleProvider {
     }
 
     public static create(path: string, basePath?: string): Promise<ArticleProvider> {
-        const instance = new DefaultArticleProdider(path, basePath ?? "");
+        const instance = new DefaultArticleProvider(path, basePath ?? "");
         return instance.rescan();
     }
 
-    protected async rescan(): Promise<DefaultArticleProdider> {
+    protected async rescan(): Promise<DefaultArticleProvider> {
         verbose(`Scanning`);
         this.articles = this.scanDir(this.rootDir).sort((a: Article, b: Article) => b.date.getTime() - a.date.getTime());
         this.articles.forEach(a => { this.articlesById[a.getId()] = a; });
@@ -41,4 +46,4 @@ class DefaultArticleProdider extends ArticleProvider {
 
 }
 
-export default DefaultArticleProdider;
+export default DefaultArticleProvider;

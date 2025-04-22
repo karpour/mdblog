@@ -1,6 +1,5 @@
 # Mini markdown blog
 
-
 ## CLI
 
 ```bash
@@ -21,6 +20,7 @@ mdblog new
 
 ## TODO
 
+- [ ] Figure out what's up with express
 - [ ] Comment types
 - [ ] Comment rendering
 - [ ] Wordpress importer
@@ -33,3 +33,11 @@ mdblog new
 - [ ] RSS support
 - [ ] WebMention support
 - [ ] `<html lang='en'>`
+- [ ] Sitemap + XSL `<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>`
+- [ ] RSS XSL 
+- [ ] Meta tags
+  - [ ] fediverse:creator
+  - [ ] author
+  - [ ] date
+- [ ] link rel
+  - [ ] [Manifest](https://developer.mozilla.org/en-US/docs/Web/Manifest)

@@ -1,5 +1,5 @@
 [Unit]
-Description=MdBlog: karpour.net
+Description=karpour.net
 After=network-online.target
 Wants=network-online.target systemd-networkd-wait-online.service
 StartLimitIntervalSec=500
@@ -9,8 +9,61 @@ StartLimitBurst=5
 ExecStart=/var/www/mdblog/mdblog
 #ExecStopPost=
 
-Restart=always
+# Set working directory
+WorkingDirectory=/var/www/node/wap.orf.at/  
+# Restart on failure
+Restart=always  
+# Restart after 10 secs
 RestartSec=10s
+# Run as restricted user
+User=wap  
+# Use dedicated group
+Group=wap  
+# Set environment variable
+Environment=NODE_ENV=production  
+
+# Security settings:
+
+# Prevent privilege escalation
+NoNewPrivileges=true  
+# Make most of the system read-only
+ProtectSystem=strict  
+# Block access to home directories
+ProtectHome=true  
+# Give process its own /tmp directory
+PrivateTmp=true  
+# Prevent loading/unloading kernel modules
+ProtectKernelModules=true  
+# Block access to kernel logs
+ProtectKernelLogs=true  
+# Restrict access to cgroups
+ProtectControlGroups=true  
+# Prevent access to real-time scheduling
+RestrictRealtime=true  
+# Prevent creation of SUID/SGID binaries
+RestrictSUIDSGID=true  
+# Block mount-related syscalls (no mounting filesystems)
+SystemCallFilter=~@mount  
+# Prevent changes to process execution domain
+LockPersonality=true  
+# Make /etc read-only
+ReadOnlyPaths=/etc /var/www/karpour.net /var/www/node/wap.orf.at/ 
+# Allow writing only to app directory
+# ReadWritePaths=/opt/myapp  
+# Drop all Linux capabilities
+CapabilityBoundingSet=  
+# Remove additional capabilities
+AmbientCapabilities=  
+# Deny access to hardware devices (e.g., /dev/sda, /dev/tty)
+PrivateDevices=true  
+# Clean up inter-process communication (IPC) objects when service stops
+RemoveIPC=true  
+
+# Network sandboxing:
+
+# Allow only internet protocols (no UNIX sockets)
+RestrictAddressFamilies=AF_INET AF_INET6  
 
 [Install]
-WantedBy=multi-user.target
+# Start on boot
+WantedBy=multi-user.target  

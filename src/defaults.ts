@@ -6,7 +6,7 @@ export const CONFIG_FILE_NAME = ".mdblog.config.json";
 export const DIR_STATIC_NAME = ".static";
 export const DIR_TEMPLATES_NAME = ".templates";
 
-export const CONFIG_DEFAULT = {
+export const CONFIG_DEFAULT:MdBlogConfig = {
     siteTitle: "My MdBlog",
     hostname: "localhost",
     rootDir: ".",
@@ -14,4 +14,4 @@ export const CONFIG_DEFAULT = {
     gopherPort: 8070,
     author: "John Doe",
     syslogIdentifier: "mdblog"
-} satisfies MdBlogConfig;
+} as const;

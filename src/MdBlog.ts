@@ -11,7 +11,7 @@ import GopherMarkdownRenderer from "./renderers/GopherMarkdownRenderer";
 import ArticleMarkdownRenderer from "./renderers/ArticleMarkdownRenderer";
 import Html5MarkdownRenderer from "./renderers/Html5MarkdownRenderer";
 import { MdBlogConfig } from "./MdBlogConfig";
-import log, { verbose } from "./log";
+import log, { setVerbose, verbose } from "./log";
 import { CONFIG_FILE_NAME, DIR_STATIC_NAME, DIR_TEMPLATES_NAME } from "./defaults";
 import ArticleProvider from "./ArticleProvider";
 import { hostname } from "os";
@@ -27,6 +27,7 @@ const defaultConfig: Partial<MdBlogConfig> = {
 
 
 export function createSlug(title: string) {
+    // TODO sanitize
     return title.toLowerCase().replace(/[^A-Za-z0-9]+/g, "-");
 }
 
@@ -45,8 +46,18 @@ export type MdBlogRenderers = {
 
 const xmlBuilder = new Builder({ headless: true });
 
+type TemplateSet = {
+    readonly templateHome: TemplateFunction;
+    readonly template404: TemplateFunction;
+    readonly templateSingle: TemplateFunction;
+};
 
 
+//function getTemplateSet(directory: string): TemplateSet {
+//    
+//}
+
+setVerbose(true)
 class MdBlog {
     protected config: MdBlogConfig;
     protected readonly siteTitle: string;
@@ -92,6 +103,7 @@ class MdBlog {
             gopher: new GopherMarkdownRenderer(this.hostname)
         };
 
+        // TODO dynamic loading
         const templatePath = path.join(this.rootDir, '.templates/html5/home.ejs');
         console.log(`Loading ${templatePath}`);
         this.templateHome = ejs.compile(this.getFileContents('.templates/html5/home.ejs'), { filename: templatePath });
@@ -111,12 +123,10 @@ class MdBlog {
         // set the view engine to ejs
         this.app.set('view engine', 'ejs');
 
-        verbose(`Serving static files from "${path.join(this.articleProvider.articleDirectory, ".static")}"`);
-        this.app.use(express.static(path.join(this.articleProvider.articleDirectory, ".static")));
 
         // Middleware function to determine render engine
         this.app.get('*', (req, res, next) => {
-            let reqRenderer = `${req.query.renderer}` ?? 'html5';
+            let reqRenderer = req.query.renderer ? `${req.query.renderer}` : 'html5';
             res.locals.renderer = self.renderers[reqRenderer] ?? self.renderers['html5'];
             next();
         });
@@ -134,6 +144,7 @@ class MdBlog {
 
         // Home
         this.app.get('/', (req, res) => {
+            console.log("Getting /")
             const articleData = self.getArticles()
                 .map(article => article.getArticleData(res.locals.renderer));
             //console.log(articleData);
@@ -145,7 +156,10 @@ class MdBlog {
                 articles: articleData,
                 author: self.author,
                 hostname: self.hostname,
-                url: "https://" + hostname
+                url: "https://" + hostname,
+                lang: "en",
+                fediverseCreator: "@karpour.mstdn.social",
+                sitename: "Karpour.net",
             }));
         });
 
@@ -176,12 +190,13 @@ class MdBlog {
             }));
         });
 
+        log.debug(`Serving static files from "${path.join(this.articleProvider.articleDirectory, ".static")}"`);
+        this.app.use(express.static(path.join(this.articleProvider.articleDirectory, ".static")));
+        
         this.app.get('*', (req, res) => {
             res.status(404).send('404');
         });
 
-        //console.log(`Serving static files from "${this.articleProvider.articleDirectory}"`);
-        //this.app.use(express.static(this.articleProvider.articleDirectory));
         this.app.listen(this.config.httpPort);
         log.info(`HTTP listening on ${this.config.httpPort}`);
     }
