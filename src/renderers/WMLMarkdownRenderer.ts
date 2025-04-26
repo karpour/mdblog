@@ -1,7 +1,7 @@
 import MarkdownIt from 'markdown-it';
 import ArticleMarkdownRenderer from './ArticleMarkdownRenderer';
 
-export class WMLRenderer extends ArticleMarkdownRenderer {
+export class WmlMarkdownRenderer extends ArticleMarkdownRenderer {
     public renderImage(url: string, title?: string, alt?: string): string {
         throw new Error('Method not implemented.');
     }
@@ -56,3 +56,5 @@ export class WMLRenderer extends ArticleMarkdownRenderer {
         this.renderer.rules.link_close = () => '</anchor>';
     }
 }
+
+export default WmlMarkdownRenderer;

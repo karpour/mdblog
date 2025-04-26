@@ -5,6 +5,7 @@ export type MdBlogConfig = {
     siteTitle: string;
     hostname: string;
     rootDir: string;
+    fediverseCreator: string | null;
     basePath?: string;
     description?: string;
     keywords?: string[];

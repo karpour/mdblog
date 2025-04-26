@@ -1,0 +1,28 @@
+- [x] Figure out what's up with express
+- [ ] Comments
+    - [ ] Comment types
+    - [ ] Comment rendering
+- [ ] Wordpress importer
+- Pages
+    - [ ] Archive page
+    - [ ] Category page
+- [ ] HTML 4 renderer
+- [ ] Finish gopher renderer
+- [ ] Article PDF download
+- [ ] ActivityPub support
+  - See Fedify
+- [ ] RSS support
+- [ ] WebMention support
+- [x] `<html lang='en'>`
+- [ ] RSS XSL 
+    - [ ] Sitemap + XSL `<?xml-stylesheet href="/rss.xsl" type="text/xsl"?>`
+    - See https://www.bennadel.com/rss
+- [ ] Meta tags
+  - [ ] fediverse:creator
+  - [ ] author
+  - [ ] date
+- [ ] link rel
+  - [ ] [Manifest](https://developer.mozilla.org/en-US/docs/Web/Manifest)
+- [ ] WAP support
+- [ ] Add image & file handling
+- [ ] Add print.css

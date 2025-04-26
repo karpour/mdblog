@@ -35,6 +35,7 @@ class CreateBlogAction extends CommandLineAction {
     private _gopherPort!: CommandLineIntegerParameter;
     private _author!: CommandLineStringParameter;
     private _syslogIdentifier!: CommandLineStringParameter;
+    private _fediverseCreator!: CommandLineStringParameter;
 
     public constructor() {
         super({
@@ -87,6 +88,12 @@ class CreateBlogAction extends CommandLineAction {
             parameterShortName: "-S",
             argumentName: "IDENTIFIER",
         });
+        this._fediverseCreator = this.defineStringParameter({
+            description: "Fediverse Creator",
+            parameterLongName: "--fediverse-creator",
+            parameterShortName: "-F",
+            argumentName: "IDENTIFIER",
+        });
     }
 
     protected async onExecute(): Promise<void> {
@@ -98,6 +105,7 @@ class CreateBlogAction extends CommandLineAction {
             gopherPort: this._gopherPort.value ?? promptIntWithDefault("Gopher Port", CONFIG_DEFAULT.gopherPort!),
             author: this._author.value ?? promptWithDefault("Author", CONFIG_DEFAULT.author),
             syslogIdentifier: this._syslogIdentifier.value ?? promptWithDefault("Syslog identifer", CONFIG_DEFAULT.syslogIdentifier!),
+            fediverseCreator: this._fediverseCreator.value ?? promptWithDefault("Fediverse creator", CONFIG_DEFAULT.fediverseCreator!),
         });
     }
 }

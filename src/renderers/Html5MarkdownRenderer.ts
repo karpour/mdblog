@@ -3,6 +3,7 @@ import emoji from 'markdown-it-emoji';
 import { encode } from "html-entities";
 import highlightjs from "markdown-it-highlightjs";
 import multimdTable from 'markdown-it-multimd-table';
+import path from "path";
 const checkbox = require("markdown-it-checkbox")
 
 class Html5MarkdownRenderer extends ArticleMarkdownRenderer {

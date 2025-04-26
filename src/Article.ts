@@ -112,7 +112,7 @@ export class Article implements ArticleProps {
 
     public getArticleData(renderer: ArticleMarkdownRenderer) {
         return {
-            html: renderer.render(this.markdown),
+            html: renderer.render(this.markdown, { url: this.relativeUrl }),
             title: this.title,
             author: this.author,
             date: this.date,

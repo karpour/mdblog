@@ -7,7 +7,7 @@ import { Article } from "../Article";
 import { markdownItCheckbox } from "./markdownItCheckbox";
 
 const vimeoRE = /^(?:https?:\/\/)?(?:www\.)?vimeo.com\/(?<id>\d+)($|\/)/;
-const youtubeRE = /^(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/)(?:watch\?v=|v\/|embed\/)?([^&\s?]+)\S*$/;
+const youtubeRE = /^(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/)(?:watch\?v=|v\/|embed\/)?(?<id>[^&\s?]+)\S*$/;
 const VIDEO_EXTENSIONS = [".webm", ".mp4", ".wmv"];
 
 abstract class ArticleMarkdownRenderer extends MarkdownIt {
@@ -33,23 +33,29 @@ abstract class ArticleMarkdownRenderer extends MarkdownIt {
 
             let re: RegExpExecArray | null = null;
             if (re = vimeoRE.exec(src)) {
-                return thisInstance.renderVimeo(re[1], title, alt);
+                return thisInstance.renderVimeo(re.groups!.id, title, alt);
             } else if (re = youtubeRE.exec(src)) {
-                return thisInstance.renderYouTube(re[1], title, alt);
-            } else if (VIDEO_EXTENSIONS.includes(path.extname(src))) {
-                return thisInstance.renderVideo(src, title, alt);
+                return thisInstance.renderYouTube(re.groups!.id, title, alt);
             }
-            return thisInstance.renderImage(src, title, alt);
+
+            const srcPath = path.join(env.url, src);
+            if (VIDEO_EXTENSIONS.includes(path.extname(src))) {
+                return thisInstance.renderVideo(srcPath, title, alt);
+            }
+            return thisInstance.renderImage(srcPath, title, alt);
         };
     }
 
     public abstract renderImage(url: string, title?: string, alt?: string): string;
+
     public abstract renderVideo(url: string, title?: string, alt?: string): string;
-    public abstract renderYouTube(videoIs: string, title?: string, alt?: string): string;
-    public abstract renderVimeo(videoIs: string, title?: string, alt?: string): string;
+
+    public abstract renderYouTube(videoId: string, title?: string, alt?: string): string;
+    
+    public abstract renderVimeo(videoId: string, title?: string, alt?: string): string;
 
 
-    public render(src: string, env?: any) {
+    public render(src: string, env: { url: string; }) {
         return super.render(src, env);
     }
 
