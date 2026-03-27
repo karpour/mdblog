@@ -43,7 +43,7 @@ export function getTemplates(directory: string): TemplateSets {
                     continue;
                 }
                 verbose(`Compiling template: ${templateFilePath}`);
-                templateSet[t] = ejs.compile(getFileContents(templateFilePath));
+                templateSet[t] = ejs.compile(getFileContents(templateFilePath), { filename: templateFilePath });
             }
             templateSets[templateName] = templateSet as TemplateSet;
             const files = fs.readdirSync(directory).filter((f: string) => f.endsWith(".ejs"));

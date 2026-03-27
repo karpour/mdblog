@@ -14,5 +14,6 @@ export const CONFIG_DEFAULT: MdBlogConfig = {
     gopherPort: 8070,
     author: "John Doe",
     syslogIdentifier: "mdblog",
-    fediverseCreator: null
-} as const;
+    fediverseCreator: null,
+    keywords: []
+};

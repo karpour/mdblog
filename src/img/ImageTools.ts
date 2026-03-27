@@ -3,9 +3,12 @@ import fs, { existsSync } from "fs";
 import im from "imagemagick";
 import { Readable } from "stream";
 
+export type ImageFormat = "jpeg" | "gif" | "wbmp" | "png";
+
+export type ImageDepth = 2 | 8 | 16 | 32;
 
 export type ImageFeatures = {
-    format?: string;
+    format?: ImageFormat;
     width?: number;
     height?: number;
     depth?: number;

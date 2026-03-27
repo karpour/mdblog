@@ -8,7 +8,7 @@ export type MdBlogConfig = {
     fediverseCreator: string | null;
     basePath?: string;
     description?: string;
-    keywords?: string[];
+    keywords: string[];
     httpPort?: number;
     gopherPort?: number;
     author: string;

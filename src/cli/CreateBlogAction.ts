@@ -106,6 +106,7 @@ class CreateBlogAction extends CommandLineAction {
             author: this._author.value ?? promptWithDefault("Author", CONFIG_DEFAULT.author),
             syslogIdentifier: this._syslogIdentifier.value ?? promptWithDefault("Syslog identifer", CONFIG_DEFAULT.syslogIdentifier!),
             fediverseCreator: this._fediverseCreator.value ?? promptWithDefault("Fediverse creator", CONFIG_DEFAULT.fediverseCreator!),
+            keywords: []
         });
     }
 }

@@ -11,6 +11,8 @@ export type ArticleRenderData = {
     slug: string,
     author?: string,
     description: string,
+    categories: string[],
+    tags: string[];
     url: string;
 };
 
@@ -110,7 +112,7 @@ export class Article implements ArticleProps {
         return this.slug;
     }
 
-    public getArticleData(renderer: ArticleMarkdownRenderer) {
+    public getArticleData(renderer: ArticleMarkdownRenderer): ArticleRenderData {
         return {
             html: renderer.render(this.markdown, { url: this.relativeUrl }),
             title: this.title,

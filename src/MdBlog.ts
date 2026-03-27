@@ -1,22 +1,17 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 import RSS from "rss";
-import { Article } from "./Article";
+import { Article, ArticleRenderData } from "./Article";
 import express, { Application, Response } from 'express';
-import ejs, { TemplateFunction } from "ejs";
 import { Builder } from "xml2js";
-
-
-import GopherMarkdownRenderer from "./renderers/GopherMarkdownRenderer";
+import pretty from "pretty";
 import ArticleMarkdownRenderer from "./renderers/ArticleMarkdownRenderer";
-import Html5MarkdownRenderer from "./renderers/Html5MarkdownRenderer";
 import { MdBlogConfig } from "./MdBlogConfig";
 import log, { setVerbose, verbose } from "./log";
 import { CONFIG_FILE_NAME, DIR_STATIC_NAME, DIR_TEMPLATES_NAME } from "./defaults";
 import ArticleProvider from "./ArticleProvider";
 import { hostname } from "os";
-import Html4MarkdownRenderer from "./renderers/Html4MarkdownRenderer";
-import { getRenderers } from "./renderers";
+import { getRenderers, RENDERER_TYPES, RendererType } from "./renderers";
 import { getTemplates, TemplateSet, TemplateSets } from "./TemplateManager";
 const { GopherServer, DynamicRouter } = require("gopher-server");
 
@@ -25,7 +20,30 @@ const defaultConfig: Partial<MdBlogConfig> = {
     gopherPort: 70
 };
 
-const modes: { [key: string]: { template: string, renderer: string; }; } = {
+type SiteModes = {
+    [key: string]:
+    {
+        template: string,
+        renderer: RendererType;
+    };
+};
+
+function validateSiteModes(modes: unknown, templates: string[]): asserts modes is SiteModes {
+    if (typeof (modes) !== "object" || !modes) {
+        throw new Error(`sitemode object is not valid`);
+    }
+    for (let entry of Object.entries(modes)) {
+        const [modeName, mode] = entry;
+        if (typeof (mode.renderer) !== "string" || !RENDERER_TYPES.includes(mode.renderer)) {
+            throw new Error(`Invalid renderer value for mode ${modeName} renderer: "${mode.renderer}"`);
+        }
+        if (typeof (mode.template) !== "string" || !templates.includes(mode.template)) {
+            throw new Error(`Invalid template value for mode ${modeName} template: "${mode.renderer}" (Available templates: ${templates.join(", ")})`);
+        }
+    }
+}
+
+const modes: SiteModes = {
     "html5": {
         renderer: "html5",
         template: "html5"
@@ -34,11 +52,48 @@ const modes: { [key: string]: { template: string, renderer: string; }; } = {
         renderer: "html4",
         template: "html4"
     },
+    "text": {
+        renderer: "html5",
+        template: "text"
+    },
     "ppc": {
         renderer: "html4",
         template: "ppc"
     }
 };
+
+const CATEGORIES = [
+    {
+        id: "retro",
+        name: "Retro",
+        url: "blog/retro"
+    },
+    {
+        id: "art",
+        name: "Art",
+        url: "blog/art",
+    },
+    {
+        id: "dev",
+        name: "Dev",
+        url: "blog/dev",
+    },
+    {
+        id: "sports",
+        name: "Sports",
+        url: "blog/sports",
+    },
+    {
+        id: "gallery",
+        name: "Gallery",
+        url: "gallery",
+    },
+    {
+        id: "projects",
+        name: "Projects",
+        url: "projects",
+    },
+];
 
 
 export function createSlug(title: string) {
@@ -68,6 +123,34 @@ interface MdBlogLocals {
     templates: TemplateSet;
 }
 
+type MdFrontPageData = {
+    title: string,
+    categories: any,
+    keywords: string[],
+    description: string,
+    articles: ArticleRenderData[],
+    author: string,
+    hostname: string,
+    url: string,
+    lang: string,
+    fediverseCreator: string | null,
+    sitename: string,
+};
+
+type MdSinglePageData = {
+    title: string,
+    categories: any,
+    keywords: string[],
+    description: string,
+    author: string,
+    hostname: string,
+    url: string,
+    lang: string,
+    fediverseCreator: string | null,
+    sitename: string,
+    article: ArticleRenderData;
+};
+
 setVerbose(true);
 
 class MdBlog {
@@ -78,9 +161,9 @@ class MdBlog {
     protected readonly rootDir: string;
     protected readonly author: string;
     protected readonly description: string;
-    protected readonly keywords: string;
     protected readonly articleProvider: ArticleProvider;
     protected readonly templates: TemplateSets;
+    protected readonly modes: SiteModes;
 
     protected readonly renderers: MdBlogRenderers;
 
@@ -96,11 +179,11 @@ class MdBlog {
         this.rootDir = this.config.rootDir;
         this.description = this.config.description ?? "";
         this.author = this.config.author ?? "Unknown";
-        this.keywords = (this.config.keywords ?? []).join(', ');
+        this.config.keywords ??= [];
         this.path = this.config.path ?? "/";
         this.app = express();
         this.articleProvider = articleProvider;
-
+        this.modes = modes;
 
         this.renderers = getRenderers(this.hostname);
         this.templates = getTemplates(path.join(this.rootDir, '.templates'));
@@ -120,9 +203,10 @@ class MdBlog {
 
         // Middleware function to determine render engine
         this.app.get('*', (req, res: Response<any, MdBlogLocals>, next) => {
-            let reqRenderer = req.query.renderer ? `${req.query.renderer}` : 'html5';
-            res.locals.renderer = self.renderers[reqRenderer] ?? self.renderers['html5'];
-            res.locals.templates = self.templates["html5"];
+            const modeId = typeof (req.query.mode) == "string" ? req.query.mode : 'html5';
+            let mode = modes[modeId] ?? modes['html5'];
+            res.locals.renderer = self.renderers[mode.renderer] ?? self.renderers['html5'];
+            res.locals.templates = self.templates[mode.template] ?? self.templates['html5'];
             next();
         });
 
@@ -149,11 +233,12 @@ class MdBlog {
             console.log("Getting /");
             const articleData = self.getArticles()
                 .map(article => article.getArticleData(res.locals.renderer));
-            console.log(articleData);
+            //console.log(articleData);
 
-            res.end(res.locals.templates.home({
+            const data: MdFrontPageData = {
                 title: self.siteTitle,
-                keywords: self.keywords,
+                categories: CATEGORIES,
+                keywords: self.config.keywords,
                 description: self.description,
                 articles: articleData,
                 author: self.author,
@@ -162,7 +247,11 @@ class MdBlog {
                 lang: "en",
                 fediverseCreator: self.config.fediverseCreator,
                 sitename: self.config.siteTitle,
-            }));
+            };
+
+            console.log(data.title);
+            res.header("Content-Type", "text/html");
+            res.end(pretty(res.locals.templates.home(data), { ocd: true }));
         });
 
         this.app.get('/archive/:year', (req, res: Response<any, MdBlogLocals>) => {
@@ -181,16 +270,20 @@ class MdBlog {
                 return next();
             }
             const articleData = article.getArticleData(res.locals.renderer);
-            res.end(res.locals.templates.single({
+            const data: MdSinglePageData = {
                 title: `${article.title} - ${self.siteTitle}`,
-                keywords: article.tags,
+                categories: CATEGORIES,
+                keywords: [...article.tags, ...self.config.keywords],
                 description: article.description,
                 article: articleData,
+                lang: "en",
                 hostname: self.hostname,
                 author: article.author ?? self.author,
                 fediverseCreator: self.config.fediverseCreator,
-                url: self.getHttpUrl(article)
-            }));
+                url: self.getHttpUrl(article),
+                sitename: self.config.siteTitle,
+            };
+            res.end(res.locals.templates.single(data));
         });
 
         log.debug(`Serving static files from "${path.join(this.articleProvider.articleDirectory, ".static")}"`);
@@ -248,9 +341,8 @@ class MdBlog {
             title: this.siteTitle,
             feed_url: `http://${this.hostname}/feed/`,
             site_url: `http://${this.hostname}`,
-            image_url: "",
+            image_url: "", // TODO RSS image
             language: "English",
-
         });
         this.getArticles().forEach(article => rss.item({
             date: article.date,
