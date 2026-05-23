@@ -7,7 +7,7 @@ export async function getImageStream(filePath: string, width: number, height: nu
 
     // Check file accessibility
     try {
-        await accessSync(filePath, constants.R_OK);
+        accessSync(filePath, constants.R_OK);
     } catch (err) {
         throw new Error(`File not found or not readable: ${filePath}`);
     }
